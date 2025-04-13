@@ -3,7 +3,9 @@
 A Node.js tool to export all items in a Microsoft Loop workspace to PDF files
 automatically.
 
-Requires Google Chrome installed.
+## Demo
+
+TODO
 
 ## Installation
 
@@ -16,7 +18,7 @@ npm install -g microsoft-loop-exporter
 ## Usage
 
 > [!IMPORTANT]
-> Close your Chrome browser before executing the command
+> Close your Chrome browser before executing the command.
 
 Run the following command:
 
