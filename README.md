@@ -1,6 +1,6 @@
 # Microsoft Loop Exporter
 
-A Node.js tool to export all items in a Microsoft Loop workspace to PDF files
+A Node.js tool to export all pages in a Microsoft Loop workspace to PDF files
 automatically.
 
 ## Demo
