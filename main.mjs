@@ -42,7 +42,11 @@ async function launchChrome() {
   return chromium.launchPersistentContext(USER_DATA_DIR, {
     headless: false,
     executablePath: CHROME_PATH,
-    args: ["--profile-directory=Default", "--kiosk-printing"],
+    args: [
+      "--profile-directory=Default",
+      "--disable-popup-blocking",
+      "--kiosk-printing",
+    ],
   });
 }
 
@@ -50,7 +54,7 @@ async function launchChrome() {
 async function openWorkspace(page) {
   const selector = `div[aria-label*='${workspaceName}']`;
   await page.goto(LOOP_URL);
-  await page.waitForSelector(selector, { timeout: 10000 });
+  await page.waitForSelector(selector);
 
   const button = await page.$(selector);
   if (!button) throw new Error("Workspace not found");
@@ -61,8 +65,9 @@ async function openWorkspace(page) {
 
 // Fetches all tree items from the workspace
 async function getTreeItems(page) {
-  await page.waitForSelector("div[role='treeitem']", { timeout: 10000 });
-  const items = await page.$$("div[role='treeitem']");
+  await page.waitForSelector("*[role='treeitem']");
+  await page.waitForSelector('[data-testid^="PageSubtree_"]');
+  const items = await page.$$("*[role='treeitem']");
   console.log(`Found ${items.length} items`);
   return items;
 }
@@ -73,8 +78,11 @@ async function exportItemToPDF(context, page, item, index) {
   await item.click();
 
   try {
-    await page.click("button[aria-label='Más opciones']", { timeout: 10000 });
-    await page.waitForSelector('div[role="menuitem"]', { timeout: 10000 });
+    await page.waitForSelector("button[aria-label='Más opciones']", {
+      timeout: 10000,
+    });
+    await page.click("button[aria-label='Más opciones']");
+    await page.waitForSelector('div[role="menuitem"]');
   } catch {
     console.warn(`Options menu not ready for item ${index + 1}`);
     return;
@@ -119,7 +127,7 @@ async function handlePopupPrint(popup, index) {
   });
 
   try {
-    await popup.waitForFunction(() => window.__printed, {}, { timeout: 10000 });
+    await popup.waitForFunction(() => window.__printed, {});
     console.log(`Print triggered for item ${index}`);
   } catch {
     console.warn(`Print not triggered for item ${index}`);
@@ -137,6 +145,7 @@ async function run() {
 
     for (let i = 0; i < items.length; i++) {
       await exportItemToPDF(context, page, items[i], i);
+      await page.waitForTimeout(1_000);
     }
 
     console.log("All items processed.");
