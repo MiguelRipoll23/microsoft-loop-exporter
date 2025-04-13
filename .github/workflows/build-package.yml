@@ -1,0 +1,31 @@
+name: Build package
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths-ignore:
+      - "**.md"
+
+jobs:
+  build-package:
+    name: Build package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+
+        with:
+          cache: "npm"
+          registry-url: https://registry.npmjs.org/
+
+      - name: Build package
+        run: npm ci

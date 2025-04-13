@@ -1,0 +1,87 @@
+name: Publish release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  create-tag:
+    name: Create tag
+    runs-on: ubuntu-latest
+
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'new-release')
+
+    outputs:
+      tag-name: ${{ steps.get-tag-name.outputs.tag-name }}
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Get tag name
+        id: get-tag-name
+        run: |
+          branch_name="${{ github.event.pull_request.head.ref }}"
+          tag_name=$(echo $branch_name | sed 's/version\///')
+          echo "tag-name=$tag_name" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        run: |
+          git tag "${{ env.TAG_NAME }}"
+        env:
+          TAG_NAME: ${{ steps.get-tag-name.outputs.tag-name }}
+
+      - name: Push tag to origin
+        run: git push origin "${{ env.TAG_NAME }}"
+        env:
+          TAG_NAME: ${{ steps.get-tag-name.outputs.tag-name }}
+
+  create-release:
+    name: Create release
+    needs: [create-tag]
+    runs-on: ubuntu-latest
+    if: needs.create-tag.outputs.tag-name != ''
+    permissions:
+      contents: write
+    steps:
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: "${{ needs.create-tag.outputs.tag-name }}"
+          prerelease: ${{ contains(needs.create-tag.outputs.tag-name, '-') }}
+          generateReleaseNotes: true
+          allowUpdates: true
+
+  publish-package:
+    name: Publish package
+    runs-on: ubuntu-latest
+    needs: [create-tag, create-release]
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+
+        with:
+          registry-url: https://registry.npmjs.org/
+
+      - name: Get version
+        run: |
+          echo "NPM_VERSION=${{ needs.create-tag.outputs.tag-name }}" >> $GITHUB_ENV
+
+      - name: Publish package
+
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+        run: |
+          npm publish --access public --provenance --tag "$(if [[ $NPM_VERSION == *-* ]]; then echo beta; else echo latest; fi)"

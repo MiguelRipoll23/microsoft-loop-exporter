@@ -1,0 +1,57 @@
+name: Bump version
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        type: choice
+        default: beta
+        description: Pick channel
+        options:
+          - alpha
+          - beta
+          - stable
+
+      new-build-for-prerelease:
+        type: boolean
+        default: true
+        description: New build for prerelease
+
+jobs:
+  bump-version:
+    name: Bump version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4.0.1
+
+      - name: Get next version
+        uses: MiguelRipoll23/get-next-version@v3.0.0
+        id: get-next-version
+        with:
+          channel: ${{ inputs.channel }}
+          new-build-for-prerelease: ${{ inputs.new-build-for-prerelease }}
+
+      - name: Update version
+        run: |
+          npm version --no-git-tag-version ${{ env.NEXT_VERSION }}
+        env:
+          NEXT_VERSION: ${{ steps.get-next-version.outputs.next-version }}
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: version/${{ steps.get-next-version.outputs.next-version }}
+          commit-message: ${{ steps.get-next-version.outputs.next-version }}
+          title: Bump version to ${{ steps.get-next-version.outputs.next-version }}
+          body: Automated pull request triggered by a new release.
+          labels: new-release,ignore-for-release
+          reviewers: MiguelRipoll23
+          draft: true

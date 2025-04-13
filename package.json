@@ -1,0 +1,24 @@
+{
+  "name": "microsoft-loop-exporter",
+  "version": "1.0.0",
+  "description": "Microsoft Loop PDF exporter",
+  "main": "main.mjs",
+  "type": "module",
+  "bin": {
+    "loop": "./main.mjs"
+  },
+  "scripts": {
+    "start": "node main.mjs"
+  },
+  "keywords": [
+    "microsoft",
+    "loop",
+    "exporter",
+    "pdf"
+  ],
+  "author": "MiguelRipoll23",
+  "license": "ISC",
+  "dependencies": {
+    "playwright": "^1.51.1"
+  }
+}
